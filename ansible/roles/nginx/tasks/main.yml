@@ -1,0 +1,43 @@
+---
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Remove default Nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Create Nginx site configurations
+  template:
+    src: site.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.domain }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ sites }}"
+  notify: validate and reload nginx
+
+- name: Enable Nginx site configurations
+  file:
+    src: "/etc/nginx/sites-available/{{ item.domain }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.domain }}.conf"
+    state: link
+  loop: "{{ sites }}"
+  notify: validate and reload nginx
+
+- name: Ensure site root directories exist
+  file:
+    path: "{{ item.root }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  loop: "{{ sites }}"
+
+- name: Enable and start Nginx
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes

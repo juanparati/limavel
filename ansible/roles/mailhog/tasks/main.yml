@@ -1,0 +1,32 @@
+---
+- name: Download MailHog binary
+  get_url:
+    url: "https://github.com/mailhog/MailHog/releases/download/v1.0.1/MailHog_linux_{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+    dest: /usr/local/bin/mailhog
+    mode: '0755'
+
+- name: Create MailHog systemd service
+  copy:
+    dest: /etc/systemd/system/mailhog.service
+    content: |
+      [Unit]
+      Description=MailHog Email Catcher
+      After=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/mailhog -smtp-bind-addr 0.0.0.0:1025 -ui-bind-addr 0.0.0.0:8025
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable and start MailHog
+  systemd:
+    name: mailhog
+    daemon_reload: yes
+    state: started
+    enabled: yes

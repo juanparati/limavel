@@ -1,0 +1,8 @@
+---
+- name: Install Chromium and ChromeDriver
+  apt:
+    name:
+      - chromium
+      - chromium-driver
+    state: present
+  ignore_errors: yes

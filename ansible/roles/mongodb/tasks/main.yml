@@ -1,0 +1,27 @@
+---
+- name: Add MongoDB GPG key
+  shell: |
+    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+  args:
+    creates: /usr/share/keyrings/mongodb-server-7.0.gpg
+
+- name: Add MongoDB repository
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg] http://repo.mongodb.org/apt/debian {{ ansible_distribution_release }}/mongodb-org/7.0 main"
+    state: present
+    filename: mongodb-org-7.0
+
+- name: Update apt cache after adding MongoDB repo
+  apt:
+    update_cache: yes
+
+- name: Install MongoDB
+  apt:
+    name: mongodb-org
+    state: present
+
+- name: Enable and start MongoDB
+  systemd:
+    name: mongod
+    state: started
+    enabled: yes

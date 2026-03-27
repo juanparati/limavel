@@ -1,0 +1,45 @@
+# Instance name (used as Lima VM identifier)
+name: limavel
+
+# VM Resources
+memory: 2048
+cpus: 2
+
+# SSH keys
+authorize: ~/.ssh/id_rsa.pub
+keys:
+  - ~/.ssh/id_rsa
+
+# Shared folders (host → guest)
+folders:
+  - map: ~/code
+    to: /home/limavel/code
+
+# Nginx sites
+sites:
+  - map: limavel.test
+    to: /home/limavel/code/public
+    php: "8.3"
+
+# Databases to create on provision
+databases:
+  - limavel
+
+# Database engine (mariadb, mysql or postgresql)
+database:
+  type: mariadb
+  version: "11.4"
+  password: secret
+
+# Optional software
+features:
+  ohmyzsh: false
+  webdriver: false
+  mailhog: false
+  mongodb: false
+  valkey: true
+
+# Port forwarding (host ← guest)
+ports:
+  - send: 33060
+    to: 3306

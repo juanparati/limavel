@@ -1,0 +1,58 @@
+---
+- name: Install MySQL server
+  apt:
+    name:
+      - mysql-server
+      - mysql-client
+    state: present
+
+- name: Configure MySQL to listen on all interfaces
+  lineinfile:
+    path: /etc/mysql/mysql.conf.d/mysqld.cnf
+    regexp: '^bind-address'
+    line: 'bind-address = 0.0.0.0'
+  notify: restart mysql
+
+- name: Enable and start MySQL
+  systemd:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Create root .my.cnf
+  copy:
+    dest: /root/.my.cnf
+    content: |
+      [client]
+      user=root
+      password={{ db_password }}
+    mode: '0600'
+
+- name: Set MySQL root password
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ db_password }}"
+    host: "{{ item }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+  loop:
+    - localhost
+    - '%'
+
+- name: Create remote root user
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ db_password }}"
+    host: '%'
+    priv: '*.*:ALL,GRANT'
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+
+- name: Create limavel user
+  community.mysql.mysql_user:
+    name: limavel
+    password: "{{ db_password }}"
+    host: '%'
+    priv: '*.*:ALL,GRANT'
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present

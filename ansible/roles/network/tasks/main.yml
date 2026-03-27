@@ -1,0 +1,20 @@
+---
+- name: Configure static IP via systemd-networkd
+  copy:
+    dest: /etc/systemd/network/10-static.network
+    content: |
+      [Match]
+      Name=enp0s1
+
+      [Network]
+      Address={{ ip_address }}/24
+      DHCP=ipv4
+
+      [DHCPv4]
+      UseRoutes=true
+      UseDNS=true
+      RouteMetric=100
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart systemd-networkd

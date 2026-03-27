@@ -1,0 +1,68 @@
+---
+- name: Add Sury PHP repository key
+  shell: |
+    curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
+    dpkg -i /tmp/debsuryorg-archive-keyring.deb
+    rm -f /tmp/debsuryorg-archive-keyring.deb
+  args:
+    creates: /usr/share/keyrings/deb.sury.org-php.gpg
+
+- name: Add Sury PHP repository
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ {{ ansible_distribution_release }} main"
+    state: present
+    filename: sury-php
+
+- name: Update apt cache after adding Sury repo
+  apt:
+    update_cache: yes
+
+- name: Install PHP versions with extensions
+  apt:
+    name:
+      - "php{{ item }}-fpm"
+      - "php{{ item }}-cli"
+      - "php{{ item }}-common"
+      - "php{{ item }}-curl"
+      - "php{{ item }}-mbstring"
+      - "php{{ item }}-xml"
+      - "php{{ item }}-zip"
+      - "php{{ item }}-gd"
+      - "php{{ item }}-mysql"
+      - "php{{ item }}-pgsql"
+      - "php{{ item }}-sqlite3"
+      - "php{{ item }}-intl"
+      - "php{{ item }}-bcmath"
+      - "php{{ item }}-readline"
+      - "php{{ item }}-opcache"
+      - "php{{ item }}-redis"
+      - "php{{ item }}-igbinary"
+      - "php{{ item }}-msgpack"
+    state: present
+  loop: "{{ php_versions }}"
+
+- name: Configure PHP-FPM pool for each version
+  template:
+    src: php-fpm-pool.conf.j2
+    dest: "/etc/php/{{ item }}/fpm/pool.d/www.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ php_versions }}"
+  vars:
+    php_version: "{{ item }}"
+  register: fpm_pool_config
+
+- name: Enable and start PHP-FPM for each version
+  systemd:
+    name: "php{{ item }}-fpm"
+    state: started
+    enabled: yes
+  loop: "{{ php_versions }}"
+
+- name: Restart PHP-FPM if pool config changed
+  systemd:
+    name: "php{{ item.item }}-fpm"
+    state: restarted
+  loop: "{{ fpm_pool_config.results }}"
+  when: item is changed

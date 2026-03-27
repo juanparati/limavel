@@ -1,0 +1,17 @@
+---
+- name: Install Zsh
+  apt:
+    name: zsh
+    state: present
+
+- name: Install Oh My Zsh for limavel user
+  become_user: limavel
+  shell: |
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  args:
+    creates: /home/limavel/.oh-my-zsh
+
+- name: Set Zsh as default shell for limavel user
+  user:
+    name: limavel
+    shell: /usr/bin/zsh

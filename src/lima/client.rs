@@ -1,0 +1,217 @@
+use anyhow::Result;
+use std::process::{Command, Stdio};
+
+use crate::error::LimavelError;
+
+pub struct LimaClient;
+
+impl LimaClient {
+    pub fn check_installed() -> Result<()> {
+        which::which("limactl").map_err(|_| LimavelError::LimaNotFound)?;
+        Ok(())
+    }
+
+    pub fn instance_exists(name: &str) -> Result<bool> {
+        let output = Command::new("limactl")
+            .args(["list", "--quiet"])
+            .output()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        Ok(stdout.lines().any(|line| line.trim() == name))
+    }
+
+    pub fn instance_status(name: &str) -> Result<String> {
+        let output = Command::new("limactl")
+            .args(["list", "--json"])
+            .output()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        for line in stdout.lines() {
+            if line.contains(&format!("\"name\":\"{}\"", name))
+                || line.contains(&format!("\"name\": \"{}\"", name))
+            {
+                if line.contains("\"status\":\"Running\"")
+                    || line.contains("\"status\": \"Running\"")
+                {
+                    return Ok("Running".to_string());
+                }
+                if line.contains("\"status\":\"Stopped\"")
+                    || line.contains("\"status\": \"Stopped\"")
+                {
+                    return Ok("Stopped".to_string());
+                }
+            }
+        }
+        Ok("Unknown".to_string())
+    }
+
+    pub fn create(name: &str, template_path: &str) -> Result<()> {
+        let status = Command::new("limactl")
+            .args(["create", "--name", name, "--tty=false", template_path])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        if !status.success() {
+            return Err(LimavelError::LimactlExec("Failed to create instance".to_string()).into());
+        }
+        Ok(())
+    }
+
+    pub fn start(name: &str) -> Result<()> {
+        let status = Command::new("limactl")
+            .args(["start", name])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        if !status.success() {
+            return Err(LimavelError::LimactlExec("Failed to start instance".to_string()).into());
+        }
+        Ok(())
+    }
+
+    pub fn stop(name: &str) -> Result<()> {
+        let status = Command::new("limactl")
+            .args(["stop", name])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        if !status.success() {
+            return Err(LimavelError::LimactlExec("Failed to stop instance".to_string()).into());
+        }
+        Ok(())
+    }
+
+    pub fn restart(name: &str) -> Result<()> {
+        Self::stop(name)?;
+        Self::start(name)?;
+        Ok(())
+    }
+
+    pub fn delete(name: &str) -> Result<()> {
+        let status = Command::new("limactl")
+            .args(["delete", name])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        if !status.success() {
+            return Err(LimavelError::LimactlExec("Failed to delete instance".to_string()).into());
+        }
+        Ok(())
+    }
+
+    pub fn shell(name: &str, cmd: &str) -> Result<String> {
+        let output = Command::new("limactl")
+            .args(["shell", "--workdir", "/", name, "--", "bash", "-c", cmd])
+            .output()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(LimavelError::LimactlExec(format!(
+                "Command failed: {}",
+                stderr
+            ))
+            .into());
+        }
+
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    }
+
+    pub fn shell_interactive(name: &str, cmd: &str) -> Result<()> {
+        let status = Command::new("limactl")
+            .args(["shell", "--workdir", "/", name, "--", "bash", "-c", cmd])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .stdin(Stdio::inherit())
+            .status()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        if !status.success() {
+            return Err(LimavelError::LimactlExec("Interactive command failed".to_string()).into());
+        }
+        Ok(())
+    }
+
+    /// Tar a local directory and extract it directly into a guest path.
+    /// Uses the `tar` crate to build the archive, avoiding macOS-specific
+    /// extended attributes that cause warnings on the Linux guest.
+    pub fn tar_to_guest(name: &str, local_dir: &std::path::Path, remote_dir: &str) -> Result<()> {
+        let mut child = Command::new("limactl")
+            .args([
+                "shell",
+                "--workdir",
+                "/",
+                name,
+                "--",
+                "sudo",
+                "tar",
+                "-xf",
+                "-",
+                "-C",
+                remote_dir,
+            ])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        let stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| LimavelError::LimactlExec("Failed to open stdin pipe".to_string()))?;
+
+        let mut builder = tar::Builder::new(stdin);
+        builder.follow_symlinks(false);
+        builder
+            .append_dir_all(".", local_dir)
+            .map_err(|e| LimavelError::LimactlExec(format!("Failed to build tar archive: {}", e)))?;
+        builder
+            .into_inner()
+            .map_err(|e| LimavelError::LimactlExec(format!("Failed to finish tar archive: {}", e)))?;
+
+        let status = child
+            .wait()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        if !status.success() {
+            return Err(
+                LimavelError::LimactlExec("Failed to copy files to guest via tar".to_string()).into(),
+            );
+        }
+        Ok(())
+    }
+
+    pub fn guest_ip(name: &str) -> Result<String> {
+        let output = Self::shell(
+            name,
+            "ip -4 addr show lima0 | grep -oP 'inet \\K[0-9.]+'"
+        )?;
+        let ip = output.trim().to_string();
+        if ip.is_empty() {
+            anyhow::bail!("Could not determine guest IP from lima0 interface");
+        }
+        Ok(ip)
+    }
+
+    pub fn ensure_running(name: &str) -> Result<()> {
+        if !Self::instance_exists(name)? {
+            return Err(LimavelError::InstanceNotFound(name.to_string()).into());
+        }
+        let status = Self::instance_status(name)?;
+        if status != "Running" {
+            return Err(LimavelError::InstanceNotRunning(name.to_string()).into());
+        }
+        Ok(())
+    }
+}

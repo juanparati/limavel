@@ -1,0 +1,85 @@
+---
+- name: Add MariaDB repository key
+  shell: |
+    curl -fsSL https://mariadb.org/mariadb_release_signing_key.pgp | gpg --dearmor -o /usr/share/keyrings/mariadb-archive-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/mariadb-archive-keyring.gpg
+
+- name: Check if MariaDB repo supports this distribution release
+  uri:
+    url: "https://deb.mariadb.org/{{ db_version }}/debian/dists/{{ ansible_distribution_release }}/InRelease"
+    method: HEAD
+  register: mariadb_repo_check
+  ignore_errors: yes
+
+- name: Set MariaDB repo distribution codename
+  set_fact:
+    mariadb_repo_dist: "{{ ansible_distribution_release if mariadb_repo_check is success else 'sid' }}"
+
+- name: Add MariaDB repository
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/mariadb-archive-keyring.gpg] https://deb.mariadb.org/{{ db_version }}/debian {{ mariadb_repo_dist }} main"
+    state: present
+    filename: mariadb
+
+- name: Update apt cache after adding MariaDB repo
+  apt:
+    update_cache: yes
+
+- name: Install MariaDB server
+  apt:
+    name:
+      - mariadb-server
+      - mariadb-client
+    state: present
+
+- name: Configure MariaDB to listen on all interfaces
+  lineinfile:
+    path: /etc/mysql/mariadb.conf.d/50-server.cnf
+    regexp: '^bind-address'
+    line: 'bind-address = 0.0.0.0'
+  notify: restart mariadb
+
+- name: Enable and start MariaDB
+  systemd:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Create root .my.cnf
+  copy:
+    dest: /root/.my.cnf
+    content: |
+      [client]
+      user=root
+      password={{ db_password }}
+    mode: '0600'
+
+- name: Set MariaDB root password
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ db_password }}"
+    host: "{{ item }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+  loop:
+    - localhost
+    - '%'
+
+- name: Create remote root user
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ db_password }}"
+    host: '%'
+    priv: '*.*:ALL,GRANT'
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present
+
+- name: Create limavel user
+  community.mysql.mysql_user:
+    name: limavel
+    password: "{{ db_password }}"
+    host: '%'
+    priv: '*.*:ALL,GRANT'
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    state: present

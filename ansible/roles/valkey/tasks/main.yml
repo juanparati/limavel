@@ -1,0 +1,25 @@
+---
+- name: Install Valkey
+  apt:
+    name: valkey-server
+    state: present
+
+- name: Configure Valkey to listen on all interfaces
+  lineinfile:
+    path: /etc/valkey/valkey.conf
+    regexp: '^bind '
+    line: 'bind 0.0.0.0 ::1'
+  register: valkey_config
+  ignore_errors: yes
+
+- name: Enable and start Valkey
+  systemd:
+    name: valkey-server
+    state: started
+    enabled: yes
+
+- name: Restart Valkey if config changed
+  systemd:
+    name: valkey-server
+    state: restarted
+  when: valkey_config is changed

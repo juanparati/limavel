@@ -1,0 +1,64 @@
+---
+- name: Install PostgreSQL
+  apt:
+    name:
+      - postgresql
+      - postgresql-client
+      - postgresql-contrib
+    state: present
+
+- name: Ensure PostgreSQL is started
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Detect PostgreSQL version directory
+  shell: ls /etc/postgresql/ | sort -rn | head -1
+  register: pg_version_detected
+  changed_when: false
+
+- name: Set PostgreSQL version fact
+  set_fact:
+    pg_version: "{{ pg_version_detected.stdout }}"
+
+- name: Configure PostgreSQL to listen on all interfaces
+  lineinfile:
+    path: "/etc/postgresql/{{ pg_version }}/main/postgresql.conf"
+    regexp: "^#?listen_addresses"
+    line: "listen_addresses = '*'"
+  notify: restart postgresql
+
+- name: Allow remote connections in pg_hba.conf
+  lineinfile:
+    path: "/etc/postgresql/{{ pg_version }}/main/pg_hba.conf"
+    line: "host    all    all    0.0.0.0/0    scram-sha-256"
+    insertafter: EOF
+  notify: restart postgresql
+
+- name: Flush handlers to apply PostgreSQL config changes
+  meta: flush_handlers
+
+- name: Create root .pgpass
+  copy:
+    dest: /root/.pgpass
+    content: |
+      localhost:5432:*:root:{{ db_password }}
+      localhost:5432:*:limavel:{{ db_password }}
+    mode: '0600'
+
+- name: Create PostgreSQL superuser
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    name: root
+    password: "{{ db_password }}"
+    role_attr_flags: SUPERUSER,CREATEDB,CREATEROLE
+    state: present
+
+- name: Create PostgreSQL limavel user
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    name: limavel
+    password: "{{ db_password }}"
+    role_attr_flags: SUPERUSER,CREATEDB,CREATEROLE
+    state: present
