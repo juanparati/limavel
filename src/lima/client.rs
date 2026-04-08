@@ -95,6 +95,72 @@ impl LimaClient {
         Ok(())
     }
 
+    pub fn instance_disk_gib(name: &str) -> Result<u32> {
+        let output = Command::new("limactl")
+            .args(["list", "--json"])
+            .output()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        for line in stdout.lines() {
+            if line.contains(&format!("\"name\":\"{}\"", name))
+                || line.contains(&format!("\"name\": \"{}\"", name))
+            {
+                // Match the root-level numeric "disk":<bytes> field (not the config string "disk":"50GiB")
+                if let Some(pos) = line.find("\"disk\":") {
+                    let after = &line[pos + 7..];
+                    let trimmed = after.trim_start();
+                    if trimmed.starts_with('"') {
+                        // This is the config-level string field, skip and keep searching
+                    } else {
+                        let num_str: String = trimmed.chars().take_while(|c| c.is_ascii_digit()).collect();
+                        if let Ok(bytes) = num_str.parse::<u64>() {
+                            return Ok((bytes / (1024 * 1024 * 1024)) as u32);
+                        }
+                    }
+                }
+                // Try a second pass for spaced variant "disk": <bytes>
+                if let Some(pos) = line.find("\"disk\": ") {
+                    let after = &line[pos + 8..];
+                    let trimmed = after.trim_start();
+                    if !trimmed.starts_with('"') {
+                        let num_str: String = trimmed.chars().take_while(|c| c.is_ascii_digit()).collect();
+                        if let Ok(bytes) = num_str.parse::<u64>() {
+                            return Ok((bytes / (1024 * 1024 * 1024)) as u32);
+                        }
+                    }
+                }
+            }
+        }
+        anyhow::bail!("Could not determine disk size for instance '{}'", name)
+    }
+
+    pub fn edit(name: &str, cpus: u32, memory_mib: u32, disk_gib: Option<u32>) -> Result<()> {
+        let memory_gib = memory_mib as f64 / 1024.0;
+        let mut args = vec![
+            "edit".to_string(),
+            name.to_string(),
+            format!("--cpus={}", cpus),
+            format!("--memory={}", memory_gib),
+        ];
+        if let Some(disk) = disk_gib {
+            args.push(format!("--disk={}", disk));
+        }
+        args.push("--tty=false".to_string());
+
+        let status = Command::new("limactl")
+            .args(&args)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()
+            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
+
+        if !status.success() {
+            return Err(LimavelError::LimactlExec("Failed to edit instance".to_string()).into());
+        }
+        Ok(())
+    }
+
     pub fn delete(name: &str) -> Result<()> {
         let status = Command::new("limactl")
             .args(["delete", name])

@@ -21,6 +21,7 @@ fn main() {
         Commands::Provision { name } => commands::provision::execute(&name),
         Commands::Ssh { name } => commands::ssh::execute(&name),
         Commands::Status { name } => commands::status::execute(&name),
+        Commands::Edit { name } => commands::edit::execute(&name),
         Commands::Destroy { name } => commands::destroy::execute(&name),
     };
 

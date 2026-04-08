@@ -10,6 +10,10 @@ pub struct LimavelConfig {
     pub name: String,
     pub memory: u32,
     pub cpus: u32,
+    #[serde(default = "default_disk")]
+    pub disk: u32,
+    pub image: String,
+    pub arch: String,
     pub authorize: String,
     pub keys: Vec<String>,
     pub folders: Vec<FolderMap>,
@@ -54,6 +58,10 @@ pub struct Features {
 pub struct PortMap {
     pub send: u16,
     pub to: u16,
+}
+
+fn default_disk() -> u32 {
+    50
 }
 
 impl LimavelConfig {

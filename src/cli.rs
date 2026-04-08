@@ -7,10 +7,9 @@ use clap::{Parser, Subcommand};
     about = "Laravel Virtual Machine Manager",
     before_help = r#"
 
-██     ▄▄ ▄▄   ▄▄  ▄▄▄  ██  ██ ▄▄▄▄▄ ▄▄
-██     ██ ██▀▄▀██ ██▀██ ██▄▄██ ██▄▄  ██
-██████ ██ ██   ██ ██▀██  ▀██▀  ██▄▄▄ ██▄▄▄
-"#
+╷  ╷╭┬╮╭─╮╷ ╷╭─╴╷
+│  ││││├─┤│╭╯├╴ │
+╰─╴╵╵ ╵╵ ╵╰╯ ╰─╴╰─╴"#
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -63,6 +62,12 @@ pub enum Commands {
     },
     /// Show the VM instance status
     Status {
+        /// Instance name (reads <name>.yaml, defaults to "limavel")
+        #[arg(default_value = "limavel")]
+        name: String,
+    },
+    /// Edit VM resources (memory, cpus) from config
+    Edit {
         /// Instance name (reads <name>.yaml, defaults to "limavel")
         #[arg(default_value = "limavel")]
         name: String,

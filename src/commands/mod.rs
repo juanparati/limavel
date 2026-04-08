@@ -1,4 +1,5 @@
 pub mod destroy;
+pub mod edit;
 pub mod init;
 pub mod provision;
 pub mod reboot;

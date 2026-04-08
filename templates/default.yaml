@@ -4,6 +4,12 @@ name: limavel
 # VM Resources
 memory: 2048
 cpus: 2
+disk: 50
+
+# OS image and architecture
+# Note: It cannot be changed after vm creation
+image: "https://cloud.debian.org/images/cloud/trixie/daily/latest/debian-13-genericcloud-arm64-daily.qcow2"
+arch: aarch64
 
 # SSH keys
 authorize: ~/.ssh/id_rsa.pub
@@ -12,13 +18,13 @@ keys:
 
 # Shared folders (host → guest)
 folders:
-  - map: ~/code
-    to: /home/limavel/code
+  - map: ~/myproject/code                   # The project folder located in the host machine
+    to: /home/limavel/myproject/code        # The project folder located in the guest machine
 
 # Nginx sites
 sites:
   - map: limavel.test
-    to: /home/limavel/code/public
+    to: /home/limavel/myproject/code/public # The project folder for serve by Nginx located in the guest machine
     php: "8.3"
 
 # Databases to create on provision
