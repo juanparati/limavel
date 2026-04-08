@@ -20,6 +20,37 @@ fn update_etc_hosts(instance: &str, config: &LimavelConfig) -> Result<()> {
     Ok(())
 }
 
+fn apply_resource_changes(instance: &str, config: &LimavelConfig) -> Result<()> {
+    let current_cpus = LimaClient::instance_cpus(instance)?;
+    let current_memory = LimaClient::instance_memory_mib(instance)?;
+    let current_disk = LimaClient::instance_disk_gib(instance)?;
+
+    let cpus_changed = config.cpus != current_cpus;
+    let memory_changed = config.memory != current_memory;
+    let disk_changed = config.disk > current_disk;
+
+    if cpus_changed || memory_changed || disk_changed {
+        let mut changes = Vec::new();
+        if cpus_changed {
+            changes.push(format!("cpus: {} -> {}", current_cpus, config.cpus));
+        }
+        if memory_changed {
+            changes.push(format!("memory: {}MiB -> {}MiB", current_memory, config.memory));
+        }
+        if disk_changed {
+            changes.push(format!("disk: {}GiB -> {}GiB", current_disk, config.disk));
+        }
+        println!("{} Applying resource changes: {}", "→".cyan(), changes.join(", "));
+
+        let new_disk = if disk_changed { Some(config.disk) } else { None };
+        LimaClient::edit(instance, config.cpus, config.memory, new_disk)?;
+
+        println!("{} Resource changes applied.", "✓".green());
+    }
+
+    Ok(())
+}
+
 pub fn execute(name: &str, no_hosts: bool) -> Result<()> {
     LimaClient::check_installed()?;
 
@@ -33,6 +64,8 @@ pub fn execute(name: &str, no_hosts: bool) -> Result<()> {
             println!("{} VM '{}' is already running.", "ℹ".cyan(), instance);
             return Ok(());
         }
+
+        apply_resource_changes(instance, &config)?;
 
         println!("{} Starting VM '{}'...", "→".cyan(), instance);
         LimaClient::start(instance)?;

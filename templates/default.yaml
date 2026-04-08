@@ -18,8 +18,8 @@ keys:
 
 # Shared folders (host → guest)
 folders:
-  - map: ~/myproject/code                   # The project folder located in the host machine
-    to: /home/limavel/myproject/code        # The project folder located in the guest machine
+  - map: ~/myproject                   # The project folder located in the host machine
+    to: /home/limavel/myproject        # The project folder located in the guest machine
 
 # Nginx sites
 sites:

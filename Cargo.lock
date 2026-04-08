@@ -315,6 +315,7 @@ dependencies = [
  "colored",
  "dirs",
  "serde",
+ "serde_json",
  "serde_yml",
  "shellexpand",
  "tar",

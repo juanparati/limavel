@@ -95,7 +95,8 @@ impl LimaClient {
         Ok(())
     }
 
-    pub fn instance_disk_gib(name: &str) -> Result<u32> {
+    /// Parse the JSON object for a given instance from `limactl list --json`.
+    fn instance_json(name: &str) -> Result<serde_json::Value> {
         let output = Command::new("limactl")
             .args(["list", "--json"])
             .output()
@@ -103,48 +104,48 @@ impl LimaClient {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         for line in stdout.lines() {
-            if line.contains(&format!("\"name\":\"{}\"", name))
-                || line.contains(&format!("\"name\": \"{}\"", name))
-            {
-                // Match the root-level numeric "disk":<bytes> field (not the config string "disk":"50GiB")
-                if let Some(pos) = line.find("\"disk\":") {
-                    let after = &line[pos + 7..];
-                    let trimmed = after.trim_start();
-                    if trimmed.starts_with('"') {
-                        // This is the config-level string field, skip and keep searching
-                    } else {
-                        let num_str: String = trimmed.chars().take_while(|c| c.is_ascii_digit()).collect();
-                        if let Ok(bytes) = num_str.parse::<u64>() {
-                            return Ok((bytes / (1024 * 1024 * 1024)) as u32);
-                        }
-                    }
-                }
-                // Try a second pass for spaced variant "disk": <bytes>
-                if let Some(pos) = line.find("\"disk\": ") {
-                    let after = &line[pos + 8..];
-                    let trimmed = after.trim_start();
-                    if !trimmed.starts_with('"') {
-                        let num_str: String = trimmed.chars().take_while(|c| c.is_ascii_digit()).collect();
-                        if let Ok(bytes) = num_str.parse::<u64>() {
-                            return Ok((bytes / (1024 * 1024 * 1024)) as u32);
-                        }
-                    }
+            if let Ok(obj) = serde_json::from_str::<serde_json::Value>(line) {
+                if obj.get("name").and_then(|v| v.as_str()) == Some(name) {
+                    return Ok(obj);
                 }
             }
         }
-        anyhow::bail!("Could not determine disk size for instance '{}'", name)
+        anyhow::bail!("Could not find instance '{}'", name)
+    }
+
+    pub fn instance_cpus(name: &str) -> Result<u32> {
+        let obj = Self::instance_json(name)?;
+        obj.get("cpus")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as u32)
+            .ok_or_else(|| anyhow::anyhow!("Could not determine cpus for instance '{}'", name))
+    }
+
+    pub fn instance_memory_mib(name: &str) -> Result<u32> {
+        let obj = Self::instance_json(name)?;
+        obj.get("memory")
+            .and_then(|v| v.as_u64())
+            .map(|bytes| (bytes / (1024 * 1024)) as u32)
+            .ok_or_else(|| anyhow::anyhow!("Could not determine memory for instance '{}'", name))
+    }
+
+    pub fn instance_disk_gib(name: &str) -> Result<u32> {
+        let obj = Self::instance_json(name)?;
+        obj.get("disk")
+            .and_then(|v| v.as_u64())
+            .map(|bytes| (bytes / (1024 * 1024 * 1024)) as u32)
+            .ok_or_else(|| anyhow::anyhow!("Could not determine disk size for instance '{}'", name))
     }
 
     pub fn edit(name: &str, cpus: u32, memory_mib: u32, disk_gib: Option<u32>) -> Result<()> {
-        let memory_gib = memory_mib as f64 / 1024.0;
         let mut args = vec![
             "edit".to_string(),
             name.to_string(),
             format!("--cpus={}", cpus),
-            format!("--memory={}", memory_gib),
+            format!("--memory={}MiB", memory_mib),
         ];
         if let Some(disk) = disk_gib {
-            args.push(format!("--disk={}", disk));
+            args.push(format!("--disk={}GiB", disk));
         }
         args.push("--tty=false".to_string());
 
