@@ -1,5 +1,7 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
+use colored::Colorize;
 use serde::Serialize;
+use std::path::Path;
 use tempfile::TempDir;
 
 use crate::config::limavel_config::LimavelConfig;
@@ -83,7 +85,28 @@ pub fn provision(name: &str, config: &LimavelConfig) -> Result<()> {
     let tmpdir = TempDir::new().context("Failed to create temp directory")?;
     let ansible_dir = tmpdir.path();
 
-    playbooks::write_all(ansible_dir)?;
+    if let Some(ref playbooks_path) = config.playbooks {
+        let expanded = shellexpand::tilde(playbooks_path).to_string();
+        let src = Path::new(&expanded);
+        if !src.is_dir() {
+            bail!(
+                "{} Custom playbooks path '{}' does not exist or is not a directory.",
+                "Error:".red(),
+                expanded
+            );
+        }
+        if !src.join("playbook.yml").exists() {
+            bail!(
+                "{} Custom playbooks path '{}' does not contain a playbook.yml file.",
+                "Error:".red(),
+                expanded
+            );
+        }
+        copy_dir_recursive(src, ansible_dir)
+            .with_context(|| format!("Failed to copy custom playbooks from '{}'", expanded))?;
+    } else {
+        playbooks::write_all(ansible_dir)?;
+    }
 
     // Write vars file
     std::fs::write(ansible_dir.join("vars.yml"), &vars_yaml)?;
@@ -101,5 +124,20 @@ pub fn provision(name: &str, config: &LimavelConfig) -> Result<()> {
         "sudo ansible-playbook -c local -i 'localhost,' /opt/limavel/ansible/playbook.yml -e @/opt/limavel/ansible/vars.yml",
     )?;
 
+    Ok(())
+}
+
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        let dest_path = dst.join(entry.file_name());
+        if file_type.is_dir() {
+            copy_dir_recursive(&entry.path(), &dest_path)?;
+        } else {
+            std::fs::copy(entry.path(), &dest_path)?;
+        }
+    }
     Ok(())
 }

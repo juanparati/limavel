@@ -1,4 +1,5 @@
 mod ansible;
+mod bootstrap;
 mod cli;
 mod commands;
 mod config;
@@ -23,6 +24,7 @@ fn main() {
         Commands::Status { name } => commands::status::execute(&name),
         Commands::Edit { name } => commands::edit::execute(&name),
         Commands::Destroy { name } => commands::destroy::execute(&name),
+        Commands::Publish { path } => commands::publish::execute(&path),
     };
 
     if let Err(e) = result {

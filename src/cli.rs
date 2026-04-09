@@ -78,4 +78,10 @@ pub enum Commands {
         #[arg(default_value = "limavel")]
         name: String,
     },
+    /// Publish embedded bootstrap and ansible directories to the filesystem
+    Publish {
+        /// Target directory (defaults to current directory)
+        #[arg(default_value = ".")]
+        path: String,
+    },
 }

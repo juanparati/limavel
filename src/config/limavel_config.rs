@@ -22,6 +22,10 @@ pub struct LimavelConfig {
     pub database: DatabaseConfig,
     pub features: Features,
     pub ports: Vec<PortMap>,
+    #[serde(default)]
+    pub bootstrap: Option<String>,
+    #[serde(default)]
+    pub playbooks: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

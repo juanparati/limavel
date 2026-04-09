@@ -99,7 +99,7 @@ impl LimaConfig {
             })
             .collect();
 
-        let bootstrap_script = generate_bootstrap_script(ssh_pubkey);
+        let bootstrap_script = generate_bootstrap_script(ssh_pubkey, &config.bootstrap);
 
         LimaConfig {
             vm_type: "vz".to_string(),
@@ -138,7 +138,24 @@ impl LimaConfig {
     }
 }
 
-fn generate_bootstrap_script(ssh_pubkey: &str) -> String {
-    let template = include_str!("../bootstraps/debian/trixie/main.sh");
+fn generate_bootstrap_script(ssh_pubkey: &str, custom_path: &Option<String>) -> String {
+
+    let template = if let Some(path) = custom_path {
+        let expanded = shellexpand::tilde(path).to_string();
+        std::fs::read_to_string(&expanded)
+            .unwrap_or_else(|e| panic!("Failed to read custom bootstrap script '{}': {}", expanded, e))
+
+    } else {
+        use include_dir::{include_dir, Dir};
+
+        static BOOTSTRAPS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/bootstrap");
+        BOOTSTRAPS_DIR
+            .get_file("main.sh")
+            .expect("bootstrap/main.sh missing from embedded directory")
+            .contents_utf8()
+            .expect("bootstrap/main.sh is not valid UTF-8")
+            .to_string()
+    };
+
     template.replace("{ssh_pubkey}", ssh_pubkey)
 }
