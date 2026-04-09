@@ -36,7 +36,7 @@ The provisioning process is based on Ansible playbooks.
 
 ### Playbooks customization
 
-Limavel was developed for using Debian Trixian as base, however it's possible to customize the bootstrap scripts and playbooks to use other distributions.
+Limavel was developed for using Debian Trixie as base, however, it's possible to customize the bootstrap scripts and playbooks to use other distributions.
 
 In order of publishing the OS bootstrap and Ansible playbook files you can run ```limavel publish```. Feel free to modify these files for custom needs.
 
