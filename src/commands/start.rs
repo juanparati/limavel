@@ -103,7 +103,7 @@ pub fn execute(name: &str, no_hosts: bool) -> Result<()> {
         update_etc_hosts(instance, &config)?;
     }
 
-    println!("Type \"{}\" for accessing to your development environment", "limaval ssh".green());
+    println!("Type \"{}\" for accessing to your development environment", "limavel ssh".green());
 
     Ok(())
 }
