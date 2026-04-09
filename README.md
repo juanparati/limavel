@@ -8,7 +8,7 @@ A Laravel Homestead replacement for Mac OS.
 
 ## Motivation
 
-Laravel offers a great development environment based on containers for macOS with [Laravel Herd](https://herd.laravel.com/); however, some developers require testing their development in environments that are close to the production ones, or simply need extra customization and security. Limavel offers the possibility of using virtualized development environments like [Laravel Homestead](https://laravel.com/docs/13.x/homestead) but without using Vagrant and Parallels Desktop.
+Laravel offers a great development environment based on containers for macOS with [Laravel Herd](https://herd.laravel.com/); however, some developers require a development environment that must be closed to the production one, or simply need extra customization and security. Limavel offers the possibility of using virtualized development environments like [Laravel Homestead](https://laravel.com/docs/13.x/homestead) but without using Vagrant and Parallels Desktop.
 
 
 ## How it works
@@ -60,6 +60,4 @@ With the ```limavel ssh``` command you can access the virtual machine using SSH.
 | ```stop```      | Stop the virtual machine                       |
 | ```status```    | Check the status of the virtual machine        |
 | ```ssh```       | Access the virtual machine using SSH           |
-
-
 
