@@ -6,6 +6,7 @@ use crate::hosts;
 use crate::lima::client::LimaClient;
 use crate::ansible::runner;
 
+
 pub fn execute(name: &str) -> Result<()> {
     LimaClient::check_installed()?;
 
@@ -18,13 +19,7 @@ pub fn execute(name: &str) -> Result<()> {
     println!("{} Provisioning complete!", "✓".green());
 
     // Refresh /etc/hosts in case sites changed
-    let ip = LimaClient::guest_ip(instance)?;
-    let domains: Vec<String> = config.sites.iter().map(|s| s.map.clone()).collect();
-    if !domains.is_empty() {
-        println!("{} Updating /etc/hosts ({})...", "→".cyan(), ip);
-        hosts::update(instance, &ip, &domains)?;
-        println!("{} /etc/hosts updated.", "✓".green());
-    }
+    hosts::update_from_config(instance, &config)?;
 
     Ok(())
 }

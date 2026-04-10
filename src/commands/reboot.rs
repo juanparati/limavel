@@ -17,13 +17,7 @@ pub fn execute(name: &str) -> Result<()> {
     println!("{} VM '{}' restarted.", "✓".green(), instance);
 
     // Refresh /etc/hosts since IP may change after reboot
-    let ip = LimaClient::guest_ip(instance)?;
-    let domains: Vec<String> = config.sites.iter().map(|s| s.map.clone()).collect();
-    if !domains.is_empty() {
-        println!("{} Updating /etc/hosts ({})...", "→".cyan(), ip);
-        hosts::update(instance, &ip, &domains)?;
-        println!("{} /etc/hosts updated.", "✓".green());
-    }
+    hosts::update_from_config(instance, &config)?;
 
     Ok(())
 }

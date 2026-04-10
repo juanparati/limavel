@@ -22,6 +22,8 @@ pub struct LimavelConfig {
     pub database: DatabaseConfig,
     pub features: Features,
     pub ports: Vec<PortMap>,
+    #[serde(default = "default_nodejs")]
+    pub nodejs: String,
     #[serde(default)]
     pub bootstrap: Option<String>,
     #[serde(default)]
@@ -68,6 +70,10 @@ fn default_disk() -> u32 {
     50
 }
 
+fn default_nodejs() -> String {
+    "24".to_string()
+}
+
 impl LimavelConfig {
     /// Returns the config file path for a given instance name: `{name}.yaml`
     pub fn config_path(name: &str) -> PathBuf {
@@ -90,13 +96,12 @@ impl LimavelConfig {
         Ok(config)
     }
 
-    pub fn resolve_path(path: &str) -> Result<String> {
-        let expanded = shellexpand::tilde(path).to_string();
-        Ok(expanded)
+    pub fn resolve_path(path: &str) -> String {
+        shellexpand::tilde(path).to_string()
     }
 
     pub fn read_ssh_pubkey(&self) -> Result<String> {
-        let path = Self::resolve_path(&self.authorize)?;
+        let path = Self::resolve_path(&self.authorize);
         let p = Path::new(&path);
         if !p.exists() {
             return Err(LimavelError::SshKeyNotFound(self.authorize.clone()).into());

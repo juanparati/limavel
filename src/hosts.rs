@@ -96,3 +96,23 @@ pub fn remove(name: &str) -> Result<()> {
     let cleaned = read_and_strip(name)?;
     sudo_write(&cleaned)
 }
+
+/// Resolve the guest IP and update /etc/hosts for the given instance's sites.
+/// Prints progress messages. No-ops if there are no site domains.
+pub fn update_from_config(
+    instance: &str,
+    config: &crate::config::limavel_config::LimavelConfig,
+) -> Result<()> {
+    use colored::Colorize;
+
+    let domains: Vec<String> = config.sites.iter().map(|s| s.map.clone()).collect();
+    if domains.is_empty() {
+        return Ok(());
+    }
+
+    let ip = crate::lima::client::LimaClient::guest_ip(instance)?;
+    println!("{} Updating /etc/hosts ({})...", "→".cyan(), ip);
+    update(instance, &ip, &domains)?;
+    println!("{} /etc/hosts updated.", "✓".green());
+    Ok(())
+}

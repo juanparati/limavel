@@ -1,5 +1,4 @@
 use anyhow::{bail, Context, Result};
-use colored::Colorize;
 use serde::Serialize;
 use std::path::Path;
 use tempfile::TempDir;
@@ -76,7 +75,7 @@ pub fn provision(name: &str, config: &LimavelConfig) -> Result<()> {
             mongodb: config.features.mongodb,
             valkey: config.features.valkey,
         },
-        nodejs_version: "24".to_string(),
+        nodejs_version: config.nodejs.clone(),
     };
 
     let vars_yaml = serde_yml::to_string(&vars).context("Failed to serialize ansible vars")?;
@@ -90,15 +89,13 @@ pub fn provision(name: &str, config: &LimavelConfig) -> Result<()> {
         let src = Path::new(&expanded);
         if !src.is_dir() {
             bail!(
-                "{} Custom playbooks path '{}' does not exist or is not a directory.",
-                "Error:".red(),
+                "Custom playbooks path '{}' does not exist or is not a directory.",
                 expanded
             );
         }
         if !src.join("playbook.yml").exists() {
             bail!(
-                "{} Custom playbooks path '{}' does not contain a playbook.yml file.",
-                "Error:".red(),
+                "Custom playbooks path '{}' does not contain a playbook.yml file.",
                 expanded
             );
         }

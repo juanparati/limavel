@@ -1,4 +1,5 @@
 use anyhow::Result;
+use colored::Colorize;
 
 use crate::config::limavel_config::LimavelConfig;
 use crate::error::LimavelError;
@@ -15,6 +16,7 @@ pub fn execute(name: &str) -> Result<()> {
 
     let was_running = LimaClient::instance_status(instance)? == "Running";
     if was_running {
+        println!("{} Stopping VM '{}' to apply changes...", "→".cyan(), instance);
         LimaClient::stop(instance)?;
     }
 
@@ -25,10 +27,15 @@ pub fn execute(name: &str) -> Result<()> {
         None
     };
 
+    println!("{} Applying resource changes (cpus: {}, memory: {}MiB, disk: {}GiB)...",
+        "→".cyan(), config.cpus, config.memory, config.disk);
     LimaClient::edit(instance, config.cpus, config.memory, new_disk)?;
+    println!("{} Resource changes applied.", "✓".green());
 
     if was_running {
+        println!("{} Starting VM '{}'...", "→".cyan(), instance);
         LimaClient::start(instance)?;
+        println!("{} VM '{}' started.", "✓".green(), instance);
     }
 
     Ok(())

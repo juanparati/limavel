@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::Serialize;
 
 use super::limavel_config::LimavelConfig;
@@ -69,7 +69,7 @@ pub struct LimaProvision {
 }
 
 impl LimaConfig {
-    pub fn from_config(config: &LimavelConfig, ssh_pubkey: &str) -> Self {
+    pub fn from_config(config: &LimavelConfig, ssh_pubkey: &str) -> Result<Self> {
         let mut mounts: Vec<LimaMount> = config
             .folders
             .iter()
@@ -99,9 +99,9 @@ impl LimaConfig {
             })
             .collect();
 
-        let bootstrap_script = generate_bootstrap_script(ssh_pubkey, &config.bootstrap);
+        let bootstrap_script = generate_bootstrap_script(ssh_pubkey, &config.bootstrap)?;
 
-        LimaConfig {
+        Ok(LimaConfig {
             vm_type: "vz".to_string(),
             os: "Linux".to_string(),
             arch: config.arch.clone(),
@@ -129,7 +129,7 @@ impl LimaConfig {
                 mode: "system".to_string(),
                 script: bootstrap_script,
             }],
-        }
+        })
     }
 
     pub fn to_yaml(&self) -> Result<String> {
@@ -138,13 +138,11 @@ impl LimaConfig {
     }
 }
 
-fn generate_bootstrap_script(ssh_pubkey: &str, custom_path: &Option<String>) -> String {
-
+fn generate_bootstrap_script(ssh_pubkey: &str, custom_path: &Option<String>) -> Result<String> {
     let template = if let Some(path) = custom_path {
         let expanded = shellexpand::tilde(path).to_string();
         std::fs::read_to_string(&expanded)
-            .unwrap_or_else(|e| panic!("Failed to read custom bootstrap script '{}': {}", expanded, e))
-
+            .with_context(|| format!("Failed to read custom bootstrap script '{}'", expanded))?
     } else {
         use include_dir::{include_dir, Dir};
 
@@ -157,5 +155,5 @@ fn generate_bootstrap_script(ssh_pubkey: &str, custom_path: &Option<String>) -> 
             .to_string()
     };
 
-    template.replace("{ssh_pubkey}", ssh_pubkey)
+    Ok(template.replace("{ssh_pubkey}", ssh_pubkey))
 }

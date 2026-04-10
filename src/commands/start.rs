@@ -9,17 +9,6 @@ use crate::hosts;
 use crate::lima::client::LimaClient;
 use crate::ansible::runner;
 
-fn update_etc_hosts(instance: &str, config: &LimavelConfig) -> Result<()> {
-    let ip = LimaClient::guest_ip(instance)?;
-    let domains: Vec<String> = config.sites.iter().map(|s| s.map.clone()).collect();
-    if !domains.is_empty() {
-        println!("{} Updating /etc/hosts ({})...", "→".cyan(), ip);
-        hosts::update(instance, &ip, &domains)?;
-        println!("{} /etc/hosts updated.", "✓".green());
-    }
-    Ok(())
-}
-
 fn apply_resource_changes(instance: &str, config: &LimavelConfig) -> Result<()> {
     let current_cpus = LimaClient::instance_cpus(instance)?;
     let current_memory = LimaClient::instance_memory_mib(instance)?;
@@ -71,7 +60,7 @@ pub fn execute(name: &str, no_hosts: bool) -> Result<()> {
         LimaClient::start(instance)?;
         println!("{} VM '{}' started.", "✓".green(), instance);
         if !no_hosts {
-            update_etc_hosts(instance, &config)?;
+            hosts::update_from_config(instance, &config)?;
         }
         return Ok(());
     }
@@ -80,7 +69,7 @@ pub fn execute(name: &str, no_hosts: bool) -> Result<()> {
     println!("{} Creating VM '{}'...", "→".cyan(), instance);
 
     let ssh_pubkey = config.read_ssh_pubkey()?;
-    let lima_config = LimaConfig::from_config(&config, &ssh_pubkey);
+    let lima_config = LimaConfig::from_config(&config, &ssh_pubkey)?;
     let yaml = lima_config.to_yaml()?;
 
     let mut tmpfile = NamedTempFile::with_suffix(".yaml")?;
@@ -100,7 +89,7 @@ pub fn execute(name: &str, no_hosts: bool) -> Result<()> {
     println!("{} Provisioning complete!", "✓".green());
 
     if !no_hosts {
-        update_etc_hosts(instance, &config)?;
+        hosts::update_from_config(instance, &config)?;
     }
 
     println!("Type \"{}\" for accessing to your development environment", "limavel ssh".green());

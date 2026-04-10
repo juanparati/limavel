@@ -11,6 +11,9 @@ disk: 50
 image: "https://cloud.debian.org/images/cloud/trixie/daily/latest/debian-13-genericcloud-arm64-daily.qcow2"
 arch: aarch64
 
+# Node.js major version
+nodejs: "24"
+
 # Alternative provision scripts (use limavel publish command for publish them)
 # Set alternative provision scripts
 # bootstrap: ./bootstrap/main.sh

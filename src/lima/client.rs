@@ -22,29 +22,15 @@ impl LimaClient {
     }
 
     pub fn instance_status(name: &str) -> Result<String> {
-        let output = Command::new("limactl")
-            .args(["list", "--json"])
-            .output()
-            .map_err(|e| LimavelError::LimactlExec(e.to_string()))?;
-
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        for line in stdout.lines() {
-            if line.contains(&format!("\"name\":\"{}\"", name))
-                || line.contains(&format!("\"name\": \"{}\"", name))
-            {
-                if line.contains("\"status\":\"Running\"")
-                    || line.contains("\"status\": \"Running\"")
-                {
-                    return Ok("Running".to_string());
-                }
-                if line.contains("\"status\":\"Stopped\"")
-                    || line.contains("\"status\": \"Stopped\"")
-                {
-                    return Ok("Stopped".to_string());
-                }
-            }
-        }
-        Ok("Unknown".to_string())
+        let obj = match Self::instance_json(name) {
+            Ok(obj) => obj,
+            Err(_) => return Ok("Unknown".to_string()),
+        };
+        let status = obj
+            .get("status")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Unknown");
+        Ok(status.to_string())
     }
 
     pub fn create(name: &str, template_path: &str) -> Result<()> {
