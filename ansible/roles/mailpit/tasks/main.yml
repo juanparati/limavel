@@ -1,0 +1,32 @@
+---
+- name: Install Mailpit
+  shell: sh < <(curl -sL https://raw.githubusercontent.com/axllent/mailpit/develop/install.sh)
+  args:
+    executable: /bin/bash
+    creates: /usr/local/bin/mailpit
+
+- name: Create Mailpit systemd service
+  copy:
+    dest: /etc/systemd/system/mailpit.service
+    content: |
+      [Unit]
+      Description=Mailpit
+      After=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/mailpit --smtp 0.0.0.0:1025 --listen 0.0.0.0:8025
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable and start Mailpit
+  systemd:
+    name: mailpit
+    daemon_reload: yes
+    state: started
+    enabled: yes

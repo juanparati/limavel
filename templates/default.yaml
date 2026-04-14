@@ -43,13 +43,13 @@ database:
   password: secret
 
 # Node.js major version
-  nodejs: "24"
+nodejs: "24"
 
 # Optional software
 features:
-  ohmyzsh: false
+  ohmyzsh: true
   webdriver: false
-  mailhog: false
+  mailpit: false
   mongodb: false
   valkey: true
 

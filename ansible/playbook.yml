@@ -20,8 +20,8 @@
     - databases
     - role: ohmyzsh
       when: "features.ohmyzsh | default(false)"
-    - role: mailhog
-      when: "features.mailhog | default(false)"
+    - role: mailpit
+      when: "features.mailpit | default(false)"
     - role: mongodb
       when: "features.mongodb | default(false)"
     - role: webdriver

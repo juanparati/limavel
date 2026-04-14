@@ -32,7 +32,7 @@ struct AnsibleSite {
 struct AnsibleFeatures {
     ohmyzsh: bool,
     webdriver: bool,
-    mailhog: bool,
+    mailpit: bool,
     mongodb: bool,
     valkey: bool,
 }
@@ -71,7 +71,7 @@ pub fn provision(name: &str, config: &LimavelConfig) -> Result<()> {
         features: AnsibleFeatures {
             ohmyzsh: config.features.ohmyzsh,
             webdriver: config.features.webdriver,
-            mailhog: config.features.mailhog,
+            mailpit: config.features.mailpit,
             mongodb: config.features.mongodb,
             valkey: config.features.valkey,
         },

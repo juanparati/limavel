@@ -53,10 +53,15 @@ pub struct DatabaseConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Features {
+    #[serde(default)]
     pub ohmyzsh: bool,
+    #[serde(default)]
     pub webdriver: bool,
-    pub mailhog: bool,
+    #[serde(default)]
+    pub mailpit: bool,
+    #[serde(default)]
     pub mongodb: bool,
+    #[serde(default)]
     pub valkey: bool,
 }
 
