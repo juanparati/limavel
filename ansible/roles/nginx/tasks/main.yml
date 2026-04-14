@@ -9,6 +9,16 @@
     path: /etc/nginx/sites-enabled/default
     state: absent
 
+- name: Generate self-signed SSL certificate
+  command: >
+    openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509
+    -subj "/CN={{ item.domain }}"
+    -keyout /etc/ssl/certs/{{ item.domain }}.key
+    -out /etc/ssl/certs/{{ item.domain }}.crt
+  args:
+    creates: /etc/ssl/certs/{{ item.domain }}.crt
+  loop: "{{ sites }}"
+
 - name: Create Nginx site configurations
   template:
     src: site.conf.j2

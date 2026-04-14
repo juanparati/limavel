@@ -22,3 +22,17 @@
       - lsb-release
       - acl
     state: present
+
+- name: Check if inotify max user watches is already configured
+  command: sysctl -n fs.inotify.max_user_watches
+  register: inotify_watches
+  changed_when: false
+
+- name: Increase inotify max user watches
+  ansible.posix.sysctl:
+    name: fs.inotify.max_user_watches
+    value: '524288'
+    sysctl_set: true
+    state: present
+    reload: true
+  when: inotify_watches.stdout | int < 524288
