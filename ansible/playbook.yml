@@ -26,3 +26,4 @@
       when: "features.mongodb | default(false)"
     - role: webdriver
       when: "features.webdriver | default(false)"
+    - laravel
