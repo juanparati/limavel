@@ -38,9 +38,9 @@ The provisioning process is based on Ansible playbooks.
 
 Limavel was developed for using Debian Trixie as a base; however, it's possible to customize the bootstrap scripts and playbooks to use other distributions.
 
-To publish the OS bootstrap and Ansible playbook files, you can run ```limavel publish```. Feel free to modify these files for custom needs.
+To publish the OS bootstrap and Ansible playbook files in your filesystem, you can run ```limavel publish```. Feel free to modify these files for custom needs.
 
-In the future I am planning to create a custom git repository for storing the customizations from users.
+In the future I am planning to create a custom git repository for storing the playbook customizations from users.
 
 
 ### SSH Access
@@ -60,4 +60,3 @@ With the ```limavel ssh``` command you can access the virtual machine using SSH.
 | ```stop```      | Stop the virtual machine                       |
 | ```status```    | Check the status of the virtual machine        |
 | ```ssh```       | Access the virtual machine using SSH           |
-

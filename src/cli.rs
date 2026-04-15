@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 #[command(
     name = "limavel",
     version,
-    about = "Laravel Virtual Machine Manager",
+    about = "LIMA Virtual Environment for Laravel",
     before_help = r#"
 
 ╷  ╷╭┬╮╭─╮╷ ╷╭─╴╷

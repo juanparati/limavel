@@ -24,7 +24,7 @@ keys:
 # Shared folders (host → guest)
 folders:
   - map: ~/myproject                   # The project folder located in the host machine
-    to: /home/limavel/myproject        # The project folder located in the guest machine
+    to: /home/limavel/myproject        # The project folder located in the guest machine (It should be always located under /home/limavel)
 
 # Nginx sites
 sites:
@@ -55,5 +55,7 @@ features:
 
 # Port forwarding (host ← guest)
 ports:
-  - send: 33060
+  - send: 33060 # MariaDB/MySQL port
     to: 3306
+  - send: 8025  # Mailpit SMTP port
+    to: 8025
