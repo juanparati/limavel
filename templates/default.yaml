@@ -13,8 +13,8 @@ arch: aarch64
 
 # Alternative provision scripts (use limavel publish command for publish them)
 # Set alternative provision scripts
-# bootstrap: ./bootstrap/main.sh
-# playbooks: ./ansible
+# bootstrap: ./provision/bootstrap/main.sh
+# playbooks: ./provision/ansible
 
 # SSH keys
 authorize: ~/.ssh/id_rsa.pub

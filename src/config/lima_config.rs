@@ -146,7 +146,7 @@ fn generate_bootstrap_script(ssh_pubkey: &str, custom_path: &Option<String>) -> 
     } else {
         use include_dir::{include_dir, Dir};
 
-        static BOOTSTRAPS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/bootstrap");
+        static BOOTSTRAPS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/provision/bootstrap");
         BOOTSTRAPS_DIR
             .get_file("main.sh")
             .expect("bootstrap/main.sh missing from embedded directory")
