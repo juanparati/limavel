@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::path::Path;
 use tempfile::TempDir;
 
-use crate::config::limavel_config::LimavelConfig;
+use crate::config::limavel_config::{Features, LimavelConfig};
 use crate::lima::client::LimaClient;
 
 use super::playbooks;
@@ -17,7 +17,7 @@ struct AnsibleVars {
     db_version: String,
     db_password: String,
     databases: Vec<String>,
-    features: AnsibleFeatures,
+    features: Features,
     nodejs_version: String,
 }
 
@@ -26,15 +26,6 @@ struct AnsibleSite {
     domain: String,
     root: String,
     php_version: String,
-}
-
-#[derive(Serialize)]
-struct AnsibleFeatures {
-    ohmyzsh: bool,
-    webdriver: bool,
-    mailpit: bool,
-    mongodb: bool,
-    valkey: bool,
 }
 
 fn ensure_ansible_installed(name: &str) -> Result<()> {
@@ -68,13 +59,7 @@ pub fn provision(name: &str, config: &LimavelConfig) -> Result<()> {
         db_version: config.database.version.clone(),
         db_password: config.database.password.clone(),
         databases: config.databases.clone(),
-        features: AnsibleFeatures {
-            ohmyzsh: config.features.ohmyzsh,
-            webdriver: config.features.webdriver,
-            mailpit: config.features.mailpit,
-            mongodb: config.features.mongodb,
-            valkey: config.features.valkey,
-        },
+        features: config.features.clone(),
         nodejs_version: config.nodejs.clone(),
     };
 

@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -63,6 +64,8 @@ pub struct Features {
     pub mongodb: bool,
     #[serde(default)]
     pub valkey: bool,
+    #[serde(flatten, default)]
+    pub extra: HashMap<String, serde_yml::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
