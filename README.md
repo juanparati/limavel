@@ -1,7 +1,7 @@
 # Limavel 🍋‍🟩
 
-> [!WARNING]  
-> This project is in early development. Use at your own risk.
+> [!NOTE]  
+> This project was moved to [https://github.com/Limavel/limavel](https://github.com/Limavel/limavel)
 
 A Laravel Homestead replacement for macOS.
 
